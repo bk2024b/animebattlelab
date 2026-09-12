@@ -41,14 +41,29 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* TRENDING BATTLES placeholder */}
+        {/* TRENDING BATTLES */}
         <section className="mx-auto max-w-[1200px] px-6 py-16">
           <h2 className="font-display text-xl font-semibold md:text-2xl">
             Trending Battles
           </h2>
-          <p className="mt-2 text-sm text-text-tertiary">
-            Battle cards will render here once the database is connected.
-          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Link
+              href="/battles/madara-vs-aizen"
+              className="rounded-card border border-border bg-surface-1 p-5 transition-colors hover:border-accent/40"
+            >
+              <p className="text-xs text-text-tertiary">Naruto × Bleach</p>
+              <p className="mt-2 font-display text-base font-semibold">
+                Madara vs Aizen
+              </p>
+              <div className="mt-3 flex h-1.5 overflow-hidden rounded-pill bg-surface-2">
+                <div className="h-full w-[38%] bg-accent" />
+                <div className="h-full w-[62%] bg-[#7C5CFF]" />
+              </div>
+              <p className="mt-2 text-xs text-text-tertiary">
+                2,481 votes · High diff
+              </p>
+            </Link>
+          </div>
         </section>
       </main>
       <Footer />
