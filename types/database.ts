@@ -15,7 +15,7 @@ export type DifficultyLevel =
   | "extreme_diff";
 export type SourceType = "manga" | "anime" | "databook" | "official" | "other";
 
-export interface Profile {
+export type Profile = {
   user_id: string;
   username: string;
   display_name: string | null;
@@ -27,9 +27,9 @@ export interface Profile {
   prediction_accuracy: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Anime {
+export type Anime = {
   id: string;
   slug: string;
   name: string;
@@ -37,9 +37,9 @@ export interface Anime {
   cover_url: string | null;
   is_published: boolean;
   created_at: string;
-}
+};
 
-export interface Character {
+export type Character = {
   id: string;
   anime_id: string;
   slug: string;
@@ -48,9 +48,9 @@ export interface Character {
   image_url: string | null;
   is_published: boolean;
   created_at: string;
-}
+};
 
-export interface CharacterForm {
+export type CharacterForm = {
   id: string;
   character_id: string;
   slug: string;
@@ -67,9 +67,9 @@ export interface CharacterForm {
   experience_score: number | null;
   is_default: boolean;
   created_at: string;
-}
+};
 
-export interface Battle {
+export type Battle = {
   id: string;
   slug: string;
   fighter_a_form_id: string;
@@ -83,18 +83,18 @@ export interface Battle {
   view_count: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface BattleVote {
+export type BattleVote = {
   id: string;
   battle_id: string;
   user_id: string;
   fighter_choice: FighterChoice;
   difficulty: DifficultyLevel | null;
   created_at: string;
-}
+};
 
-export interface Argument {
+export type Argument = {
   id: string;
   battle_id: string;
   user_id: string;
@@ -105,9 +105,9 @@ export interface Argument {
   is_removed: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface TierList {
+export type TierList = {
   id: string;
   user_id: string;
   anime_id: string | null;
@@ -119,21 +119,128 @@ export interface TierList {
   like_count: number;
   created_at: string;
   updated_at: string;
-}
+};
 
 // Minimal Database generic so createBrowserClient<Database>/createServerClient<Database>
 // type-check. Extend per-table `Row`/`Insert`/`Update` shapes as features are built.
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> };
-      anime: { Row: Anime; Insert: Partial<Anime>; Update: Partial<Anime> };
-      characters: { Row: Character; Insert: Partial<Character>; Update: Partial<Character> };
-      character_forms: { Row: CharacterForm; Insert: Partial<CharacterForm>; Update: Partial<CharacterForm> };
-      battles: { Row: Battle; Insert: Partial<Battle>; Update: Partial<Battle> };
-      battle_votes: { Row: BattleVote; Insert: Partial<BattleVote>; Update: Partial<BattleVote> };
-      arguments: { Row: Argument; Insert: Partial<Argument>; Update: Partial<Argument> };
-      tier_lists: { Row: TierList; Insert: Partial<TierList>; Update: Partial<TierList> };
+      profiles: {
+        Row: Profile;
+        Insert: Partial<Profile>;
+        Update: Partial<Profile>;
+        Relationships: [];
+      };
+      anime: {
+        Row: Anime;
+        Insert: Partial<Anime>;
+        Update: Partial<Anime>;
+        Relationships: [];
+      };
+      characters: {
+        Row: Character;
+        Insert: Partial<Character>;
+        Update: Partial<Character>;
+        Relationships: [
+          {
+            foreignKeyName: "characters_anime_id_fkey";
+            columns: ["anime_id"];
+            referencedRelation: "anime";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      character_forms: {
+        Row: CharacterForm;
+        Insert: Partial<CharacterForm>;
+        Update: Partial<CharacterForm>;
+        Relationships: [
+          {
+            foreignKeyName: "character_forms_character_id_fkey";
+            columns: ["character_id"];
+            referencedRelation: "characters";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      battles: {
+        Row: Battle;
+        Insert: Partial<Battle>;
+        Update: Partial<Battle>;
+        Relationships: [
+          {
+            foreignKeyName: "battles_fighter_a_form_id_fkey";
+            columns: ["fighter_a_form_id"];
+            referencedRelation: "character_forms";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "battles_fighter_b_form_id_fkey";
+            columns: ["fighter_b_form_id"];
+            referencedRelation: "character_forms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      battle_votes: {
+        Row: BattleVote;
+        Insert: Partial<BattleVote>;
+        Update: Partial<BattleVote>;
+        Relationships: [];
+      };
+      argument_votes: {
+        Row: { id: string; argument_id: string; user_id: string; vote: 1 | -1; created_at: string };
+        Insert: { argument_id: string; user_id: string; vote: 1 | -1 };
+        Update: Partial<{ vote: 1 | -1 }>;
+        Relationships: [];
+      };
+      battle_conditions: {
+        Row: {
+          battle_id: string;
+          location: string | null;
+          distance: string | null;
+          knowledge: string | null;
+          prep_time: string | null;
+          speed_equalized: boolean;
+          verse_equalized: boolean;
+          special_rules: string | null;
+        };
+        Insert: { battle_id: string; [key: string]: unknown };
+        Update: Partial<{ [key: string]: unknown }>;
+        Relationships: [
+          {
+            foreignKeyName: "battle_conditions_battle_id_fkey";
+            columns: ["battle_id"];
+            isOneToOne: true;
+            referencedRelation: "battles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      arguments: {
+        Row: Argument;
+        Insert: Partial<Argument>;
+        Update: Partial<Argument>;
+        Relationships: [
+          {
+            foreignKeyName: "arguments_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      tier_lists: {
+        Row: TierList;
+        Insert: Partial<TierList>;
+        Update: Partial<TierList>;
+        Relationships: [];
+      };
     };
+    Views: {};
+    Functions: {};
+    Enums: {};
+    CompositeTypes: {};
   };
-}
+};

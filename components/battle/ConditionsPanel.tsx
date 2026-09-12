@@ -1,9 +1,9 @@
-import type { MockBattle } from "@/lib/mock/battle";
+import type { BattleView } from "@/lib/battle/types";
 
 export function ConditionsPanel({
   conditions,
 }: {
-  conditions: MockBattle["conditions"];
+  conditions: BattleView["conditions"];
 }) {
   const rows = [
     { label: "Location", value: conditions.location },

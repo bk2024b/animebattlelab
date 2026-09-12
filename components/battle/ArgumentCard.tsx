@@ -1,15 +1,28 @@
-import type { MockArgument, MockBattle } from "@/lib/mock/battle";
+"use client";
+
+import { useTransition } from "react";
+import { voteOnArgumentAction } from "@/lib/battle/actions";
+import type { ArgumentView, BattleView } from "@/lib/battle/types";
 
 export function ArgumentCard({
   argument,
   battle,
+  battleSlug,
 }: {
-  argument: MockArgument;
-  battle: MockBattle;
+  argument: ArgumentView;
+  battle: BattleView;
+  battleSlug: string;
 }) {
+  const [pending, startTransition] = useTransition();
   const fighter =
     argument.fighterChoice === "a" ? battle.fighterA : battle.fighterB;
   const accentColor = argument.fighterChoice === "a" ? "#22D07A" : "#7C5CFF";
+
+  function vote(value: 1 | -1) {
+    startTransition(async () => {
+      await voteOnArgumentAction(argument.id, battleSlug, value);
+    });
+  }
 
   return (
     <article className="rounded-card border border-border bg-surface-1 p-5">
@@ -36,14 +49,18 @@ export function ArgumentCard({
         </span>
         <button
           type="button"
-          className="flex items-center gap-1 text-text-secondary hover:text-accent"
+          onClick={() => vote(1)}
+          disabled={pending}
+          className="flex items-center gap-1 text-text-secondary hover:text-accent disabled:opacity-50"
           aria-label="Upvote"
         >
           ↑ {argument.upvotes}
         </button>
         <button
           type="button"
-          className="flex items-center gap-1 text-text-secondary hover:text-error"
+          onClick={() => vote(-1)}
+          disabled={pending}
+          className="flex items-center gap-1 text-text-secondary hover:text-error disabled:opacity-50"
           aria-label="Downvote"
         >
           ↓ {argument.downvotes}

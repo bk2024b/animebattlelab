@@ -10,18 +10,15 @@ import { ConditionsPanel } from "@/components/battle/ConditionsPanel";
 import { StatComparison } from "@/components/battle/StatComparison";
 import { DebateSection } from "@/components/battle/DebateSection";
 import { RelatedBattles } from "@/components/battle/RelatedBattles";
-import { MOCK_BATTLE } from "@/lib/mock/battle";
+import { getBattleBySlug } from "@/lib/queries/battles";
+import { createClient } from "@/lib/supabase/server";
 
-// TODO: replace with a Supabase lookup by slug once battles are seeded.
-// Static param generation + ISR keeps this page fast without a DB round
-// trip on every request (PRD §55-56).
-function getBattleBySlug(slug: string) {
-  return slug === MOCK_BATTLE.slug ? MOCK_BATTLE : null;
-}
-
-export function generateStaticParams() {
-  return [{ slug: MOCK_BATTLE.slug }];
-}
+// This route reads the session cookie (for vote state + auth-gated actions),
+// which makes it dynamically rendered by default — Next.js opts out of the
+// static cache automatically the moment cookies() is touched downstream.
+// Battle *content* (fighters/stats) barely changes, so a later optimization
+// is to split that into a cached query and keep only vote state dynamic
+// (PRD §56 cache architecture).
 
 export async function generateMetadata({
   params,
@@ -29,7 +26,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const battle = getBattleBySlug(slug);
+  const battle = await getBattleBySlug(slug);
   if (!battle) return {};
 
   const title = `${battle.fighterA.name} vs ${battle.fighterB.name} — Who Wins?`;
@@ -48,8 +45,13 @@ export default async function BattlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const battle = getBattleBySlug(slug);
+  const battle = await getBattleBySlug(slug);
   if (!battle) notFound();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <>
@@ -94,10 +96,10 @@ export default async function BattlePage({
           </div>
         </section>
 
-        <VotePanel battle={battle} />
+        <VotePanel battle={battle} isAuthenticated={!!user} />
         <ConditionsPanel conditions={battle.conditions} />
         <StatComparison battle={battle} />
-        <DebateSection battle={battle} />
+        <DebateSection battle={battle} isAuthenticated={!!user} />
         <RelatedBattles battles={battle.relatedBattles} />
       </main>
       <Footer />

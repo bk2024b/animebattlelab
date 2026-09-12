@@ -1,4 +1,4 @@
-import type { MockFighter } from "@/lib/mock/battle";
+import type { FighterView } from "@/lib/battle/types";
 
 /**
  * Placeholder identity plate — gradient + initials. Real character artwork
@@ -10,7 +10,7 @@ export function FighterPlate({
   fighter,
   align = "left",
 }: {
-  fighter: MockFighter;
+  fighter: FighterView;
   align?: "left" | "right";
 }) {
   const alignmentClasses =

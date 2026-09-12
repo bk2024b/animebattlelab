@@ -1,71 +1,15 @@
-// Mock data — stands in for Supabase queries until the content DB is seeded.
-// Shape mirrors types/database.ts so swapping to real queries later is a
-// find-and-replace of the data source, not the components.
+// Dev-only fallback data — used by nothing in the live app anymore now that
+// lib/queries/battles.ts reads from Supabase. Kept around for Storybook-style
+// component preview / offline UI work. Safe to delete once no longer needed.
 
-export type MockFighter = {
-  formId: string;
-  name: string;
-  formName: string;
-  anime: string;
-  initials: string;
-  gradientFrom: string;
-  gradientTo: string;
-  stats: {
-    power: number;
-    speed: number;
-    durability: number;
-    iq: number;
-    battleIq: number;
-    hax: number;
-    stamina: number;
-    experience: number;
-  };
-};
+import type { BattleView } from "@/lib/battle/types";
+export type { FighterView as MockFighter, ArgumentView as MockArgument } from "@/lib/battle/types";
+export type MockBattle = BattleView;
+export { STAT_LABELS } from "@/lib/battle/types";
 
-export type MockArgument = {
-  id: string;
-  username: string;
-  rank: string;
-  content: string;
-  fighterChoice: "a" | "b";
-  upvotes: number;
-  downvotes: number;
-  replyCount: number;
-  createdAt: string;
-};
-
-export type MockBattle = {
-  slug: string;
-  animeLabel: string;
-  fighterA: MockFighter;
-  fighterB: MockFighter;
-  voteACount: number;
-  voteBCount: number;
-  drawCount: number;
-  difficultyBreakdown: { label: string; pct: number }[];
-  conditions: {
-    location: string;
-    knowledge: string;
-    prepTime: string;
-    speedEqualized: boolean;
-    verseEqualized: boolean;
-  };
-  arguments: MockArgument[];
-  relatedBattles: { slug: string; label: string; votes: number }[];
-};
-
-export const STAT_LABELS: { key: keyof MockFighter["stats"]; label: string }[] = [
-  { key: "power", label: "Power" },
-  { key: "speed", label: "Speed" },
-  { key: "durability", label: "Durability" },
-  { key: "iq", label: "IQ" },
-  { key: "battleIq", label: "Battle IQ" },
-  { key: "hax", label: "Hax" },
-  { key: "stamina", label: "Stamina" },
-  { key: "experience", label: "Experience" },
-];
-
-export const MOCK_BATTLE: MockBattle = {
+export const MOCK_BATTLE: BattleView = {
+  id: "mock-battle-id",
+  currentUserVote: null,
   slug: "madara-vs-aizen",
   animeLabel: "Naruto Universe × Bleach Universe",
   fighterA: {
@@ -109,13 +53,6 @@ export const MOCK_BATTLE: MockBattle = {
   voteACount: 943,
   voteBCount: 1538,
   drawCount: 0,
-  difficultyBreakdown: [
-    { label: "No diff", pct: 8 },
-    { label: "Low diff", pct: 15 },
-    { label: "Mid diff", pct: 32 },
-    { label: "High diff", pct: 37 },
-    { label: "Extreme diff", pct: 8 },
-  ],
   conditions: {
     location: "Open battlefield",
     knowledge: "Standard",

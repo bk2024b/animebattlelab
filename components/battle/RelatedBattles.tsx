@@ -1,10 +1,10 @@
 import Link from "next/link";
-import type { MockBattle } from "@/lib/mock/battle";
+import type { BattleView } from "@/lib/battle/types";
 
 export function RelatedBattles({
   battles,
 }: {
-  battles: MockBattle["relatedBattles"];
+  battles: BattleView["relatedBattles"];
 }) {
   return (
     <section className="mx-auto max-w-[720px] px-6 py-10">

@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { ArgumentCard } from "./ArgumentCard";
-import type { MockArgument, MockBattle } from "@/lib/mock/battle";
+import { submitArgumentAction } from "@/lib/battle/actions";
+import type { BattleView } from "@/lib/battle/types";
 
 const FACTOR_TAGS = [
   "Speed",
@@ -15,24 +17,32 @@ const FACTOR_TAGS = [
 
 const SORTS = ["Top", "Newest", "Controversial"] as const;
 
-export function DebateSection({ battle }: { battle: MockBattle }) {
-  const [args, setArgs] = useState<MockArgument[]>(battle.arguments);
+export function DebateSection({
+  battle,
+  isAuthenticated,
+}: {
+  battle: BattleView;
+  isAuthenticated: boolean;
+}) {
   const [sort, setSort] = useState<(typeof SORTS)[number]>("Top");
   const [content, setContent] = useState("");
   const [selectedFighter, setSelectedFighter] = useState<"a" | "b" | null>(
     null,
   );
   const [tags, setTags] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const sorted = useMemo(() => {
-    const copy = [...args];
+    const copy = [...battle.arguments];
     if (sort === "Top") return copy.sort((a, b) => b.upvotes - a.upvotes);
     if (sort === "Controversial")
       return copy.sort(
-        (a, b) => Math.min(b.upvotes, b.downvotes) - Math.min(a.upvotes, a.downvotes),
+        (a, b) =>
+          Math.min(b.upvotes, b.downvotes) - Math.min(a.upvotes, a.downvotes),
       );
-    return copy; // "Newest" — already in insertion order for the mock
-  }, [args, sort]);
+    return copy; // "Newest" — rows already arrive most-recent-first from the query
+  }, [battle.arguments, sort]);
 
   function toggleTag(tag: string) {
     setTags((prev) =>
@@ -45,24 +55,33 @@ export function DebateSection({ battle }: { battle: MockBattle }) {
   }
 
   function publish() {
+    if (!isAuthenticated) {
+      setError("sign_in");
+      return;
+    }
     if (!content.trim() || !selectedFighter) return;
-    setArgs((prev) => [
-      {
-        id: `local-${Date.now()}`,
-        username: "you",
-        rank: "Genin",
-        content: content.trim(),
-        fighterChoice: selectedFighter,
-        upvotes: 0,
-        downvotes: 0,
-        replyCount: 0,
-        createdAt: "just now",
-      },
-      ...prev,
-    ]);
-    setContent("");
-    setTags([]);
-    setSelectedFighter(null);
+
+    setError(null);
+    startTransition(async () => {
+      const result = await submitArgumentAction(
+        battle.id,
+        battle.slug,
+        content,
+        selectedFighter,
+      );
+      if (result.error === "not_authenticated") {
+        setError("sign_in");
+        return;
+      }
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setContent("");
+      setTags([]);
+      setSelectedFighter(null);
+      // revalidatePath in the server action refreshes battle.arguments on next render
+    });
   }
 
   return (
@@ -77,15 +96,16 @@ export function DebateSection({ battle }: { battle: MockBattle }) {
       {/* Composer */}
       <div className="mt-5 rounded-card border border-border bg-surface-1 p-5">
         <div className="mb-3 flex gap-2">
-          {(["a", "b"] as const).map((choice) => {
-            const fighter = choice === "a" ? battle.fighterA : battle.fighterB;
+          {(["a", "b"] as const).map((choiceKey) => {
+            const fighter =
+              choiceKey === "a" ? battle.fighterA : battle.fighterB;
             return (
               <button
-                key={choice}
+                key={choiceKey}
                 type="button"
-                onClick={() => setSelectedFighter(choice)}
+                onClick={() => setSelectedFighter(choiceKey)}
                 className={`rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  selectedFighter === choice
+                  selectedFighter === choiceKey
                     ? "border-accent text-accent"
                     : "border-border text-text-secondary hover:text-text-primary"
                 }`}
@@ -125,13 +145,25 @@ export function DebateSection({ battle }: { battle: MockBattle }) {
           ))}
         </div>
 
+        {error === "sign_in" && (
+          <p className="mt-3 text-sm text-text-secondary">
+            <Link href="/login" className="text-accent hover:underline">
+              Sign in
+            </Link>{" "}
+            to publish an argument.
+          </p>
+        )}
+        {error && error !== "sign_in" && (
+          <p className="mt-3 text-sm text-error">{error}</p>
+        )}
+
         <button
           type="button"
           onClick={publish}
-          disabled={!content.trim() || !selectedFighter}
+          disabled={!content.trim() || !selectedFighter || pending}
           className="mt-4 rounded-pill bg-accent px-4 py-2 text-sm font-semibold text-bg hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Publish argument
+          {pending ? "Publishing..." : "Publish argument"}
         </button>
       </div>
 
@@ -154,8 +186,18 @@ export function DebateSection({ battle }: { battle: MockBattle }) {
       </div>
 
       <div className="mt-5 flex flex-col gap-4">
+        {sorted.length === 0 && (
+          <p className="py-6 text-center text-sm text-text-tertiary">
+            Be the first to make the case.
+          </p>
+        )}
         {sorted.map((argument) => (
-          <ArgumentCard key={argument.id} argument={argument} battle={battle} />
+          <ArgumentCard
+            key={argument.id}
+            argument={argument}
+            battle={battle}
+            battleSlug={battle.slug}
+          />
         ))}
       </div>
     </section>

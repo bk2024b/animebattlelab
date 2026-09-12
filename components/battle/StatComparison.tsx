@@ -1,6 +1,6 @@
-import { STAT_LABELS, type MockBattle } from "@/lib/mock/battle";
+import { STAT_LABELS, type BattleView } from "@/lib/battle/types";
 
-export function StatComparison({ battle }: { battle: MockBattle }) {
+export function StatComparison({ battle }: { battle: BattleView }) {
   const { fighterA, fighterB } = battle;
 
   return (

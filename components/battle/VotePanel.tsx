@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import type { MockBattle } from "@/lib/mock/battle";
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { castVoteAction } from "@/lib/battle/actions";
+import type { BattleView } from "@/lib/battle/types";
 
 const DIFFICULTIES = [
   { key: "no_diff", label: "No Diff" },
@@ -11,22 +13,58 @@ const DIFFICULTIES = [
   { key: "extreme_diff", label: "Extreme Diff" },
 ] as const;
 
-export function VotePanel({ battle }: { battle: MockBattle }) {
-  const [choice, setChoice] = useState<"a" | "b" | null>(null);
+export function VotePanel({
+  battle,
+  isAuthenticated,
+}: {
+  battle: BattleView;
+  isAuthenticated: boolean;
+}) {
+  const [choice, setChoice] = useState<"a" | "b" | null>(battle.currentUserVote === "draw" ? null : battle.currentUserVote);
   const [difficulty, setDifficulty] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
+  const hasVotedBefore = battle.currentUserVote !== null;
   const baseA = battle.voteACount;
   const baseB = battle.voteBCount;
-  const totalBase = baseA + baseB;
 
-  // Optimistic local tally — the real vote count comes from the server once wired up.
-  const totalVotes = totalBase + (choice ? 1 : 0);
-  const voteA = baseA + (choice === "a" ? 1 : 0);
-  const voteB = baseB + (choice === "b" ? 1 : 0);
+  // Optimistic local tally: if this is a brand-new vote, add one; if the user
+  // is just switching their existing vote, the total stays the same.
+  const extra = choice && !hasVotedBefore ? 1 : 0;
+  const totalVotes = Math.max(baseA + baseB + extra, 1);
+  const voteA = baseA + (choice === "a" && !hasVotedBefore ? 1 : 0);
+  const voteB = baseB + (choice === "b" && !hasVotedBefore ? 1 : 0);
   const pctA = Math.round((voteA / totalVotes) * 100);
   const pctB = 100 - pctA;
-
   const leader = pctA >= pctB ? "a" : "b";
+
+  function handleChoice(next: "a" | "b") {
+    if (!isAuthenticated) {
+      setError("sign_in");
+      return;
+    }
+    setError(null);
+    setChoice(next);
+    startTransition(async () => {
+      const result = await castVoteAction(battle.id, battle.slug, next, null);
+      if (result.error === "not_authenticated") setError("sign_in");
+      else if (result.error) setError(result.error);
+    });
+  }
+
+  function handleDifficulty(key: string) {
+    setDifficulty(key);
+    if (!choice) return;
+    startTransition(async () => {
+      await castVoteAction(
+        battle.id,
+        battle.slug,
+        choice,
+        key as (typeof DIFFICULTIES)[number]["key"],
+      );
+    });
+  }
 
   return (
     <section className="mx-auto max-w-[560px] px-6">
@@ -37,7 +75,7 @@ export function VotePanel({ battle }: { battle: MockBattle }) {
       <div className="mt-5 grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => setChoice("a")}
+          onClick={() => handleChoice("a")}
           aria-pressed={choice === "a"}
           className={`rounded-lg border px-4 py-4 text-sm font-semibold transition-all ${
             choice === "a"
@@ -49,7 +87,7 @@ export function VotePanel({ battle }: { battle: MockBattle }) {
         </button>
         <button
           type="button"
-          onClick={() => setChoice("b")}
+          onClick={() => handleChoice("b")}
           aria-pressed={choice === "b"}
           className={`rounded-lg border px-4 py-4 text-sm font-semibold transition-all ${
             choice === "b"
@@ -61,8 +99,20 @@ export function VotePanel({ battle }: { battle: MockBattle }) {
         </button>
       </div>
 
+      {error === "sign_in" && (
+        <p className="mt-3 text-center text-sm text-text-secondary">
+          <Link href="/login" className="text-accent hover:underline">
+            Sign in
+          </Link>{" "}
+          to vote on this battle.
+        </p>
+      )}
+      {error && error !== "sign_in" && (
+        <p className="mt-3 text-center text-sm text-error">{error}</p>
+      )}
+
       {choice && (
-        <div className="mt-6 animate-[fadeIn_0.3s_ease]">
+        <div className="mt-6">
           <p className="text-center text-xs uppercase tracking-wide text-text-tertiary">
             Community verdict
           </p>
@@ -97,9 +147,10 @@ export function VotePanel({ battle }: { battle: MockBattle }) {
                 <button
                   key={d.key}
                   type="button"
-                  onClick={() => setDifficulty(d.key)}
+                  onClick={() => handleDifficulty(d.key)}
                   aria-pressed={difficulty === d.key}
-                  className={`rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  disabled={pending}
+                  className={`rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                     difficulty === d.key
                       ? "border-accent text-accent"
                       : "border-border text-text-secondary hover:text-text-primary"
