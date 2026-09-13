@@ -231,15 +231,90 @@ export type Database = {
           },
         ];
       };
+      battle_anime: {
+        Row: { battle_id: string; anime_id: string };
+        Insert: { battle_id: string; anime_id: string };
+        Update: Partial<{ battle_id: string; anime_id: string }>;
+        Relationships: [
+          {
+            foreignKeyName: "battle_anime_battle_id_fkey";
+            columns: ["battle_id"];
+            referencedRelation: "battles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "battle_anime_anime_id_fkey";
+            columns: ["anime_id"];
+            referencedRelation: "anime";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       tier_lists: {
         Row: TierList;
         Insert: Partial<TierList>;
         Update: Partial<TierList>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "tier_lists_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["user_id"];
+          },
+          {
+            foreignKeyName: "tier_lists_anime_id_fkey";
+            columns: ["anime_id"];
+            referencedRelation: "anime";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tier_list_tiers: {
+        Row: { id: string; tier_list_id: string; name: string; position: number };
+        Insert: { tier_list_id: string; name: string; position: number };
+        Update: Partial<{ name: string; position: number }>;
+        Relationships: [
+          {
+            foreignKeyName: "tier_list_tiers_tier_list_id_fkey";
+            columns: ["tier_list_id"];
+            referencedRelation: "tier_lists";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tier_list_items: {
+        Row: { id: string; tier_id: string; character_form_id: string; position: number };
+        Insert: { tier_id: string; character_form_id: string; position: number };
+        Update: Partial<{ character_form_id: string; position: number }>;
+        Relationships: [
+          {
+            foreignKeyName: "tier_list_items_tier_id_fkey";
+            columns: ["tier_id"];
+            referencedRelation: "tier_list_tiers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tier_list_items_character_form_id_fkey";
+            columns: ["character_form_id"];
+            referencedRelation: "character_forms";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      create_tier_list: {
+        Args: {
+          p_title: string;
+          p_description: string | null;
+          p_anime_id: string;
+          p_visibility: Visibility;
+          p_tiers: unknown;
+        };
+        Returns: { id: string; slug: string }[];
+      };
+    };
     Enums: {};
     CompositeTypes: {};
   };
