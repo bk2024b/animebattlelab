@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { awardXp } from "@/lib/scoring/xp";
 
 export type BattleActionState = { error: string | null };
 
@@ -44,6 +45,9 @@ export async function castVoteAction(
     return { error: error.message };
   }
 
+  // Award 2 XP on vote (PRD §23)
+  await awardXp(supabase, user.id, 2);
+
   revalidatePath(`/battles/${battleSlug}`);
   return { error: null };
 }
@@ -78,6 +82,9 @@ export async function submitArgumentAction(
   if (error) {
     return { error: error.message };
   }
+
+  // Award 10 XP for publishing an argument (PRD §23)
+  await awardXp(supabase, user.id, 10);
 
   revalidatePath(`/battles/${battleSlug}`);
   return { error: null };

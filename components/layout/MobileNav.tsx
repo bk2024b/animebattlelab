@@ -3,9 +3,9 @@ import Link from "next/link";
 const ITEMS = [
   { href: "/", label: "Home" },
   { href: "/battles", label: "Battles" },
-  { href: "/battles/create", label: "Create" },
+  { href: "/tier-lists/create", label: "＋ Create" },
+  { href: "/characters", label: "Fighters" },
   { href: "/rankings", label: "Rankings" },
-  { href: "/profile", label: "Profile" },
 ];
 
 /** Bottom navigation — mobile only. Server Component, pure links. */

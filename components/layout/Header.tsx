@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeaderSearchButton } from "@/components/layout/HeaderSearchButton";
 
 const NAV_LINKS = [
   { href: "/battles", label: "Battles" },
@@ -35,18 +36,12 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <HeaderSearchButton />
           <Link
-            href="/search"
-            aria-label="Search"
-            className="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent/50 hover:text-text-primary"
+            href="/tier-lists/create"
+            className="rounded-pill bg-accent px-4 py-1.5 text-xs font-semibold text-bg hover:opacity-90"
           >
-            Search
-          </Link>
-          <Link
-            href="/battles/create"
-            className="rounded-pill bg-accent px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90"
-          >
-            Create
+            + Create
           </Link>
         </div>
       </div>

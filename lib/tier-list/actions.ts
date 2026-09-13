@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { awardXp } from "@/lib/scoring/xp";
 
 export type PublishTierListState = { error: string | null };
 
@@ -64,5 +65,9 @@ export async function publishTierListAction(payload: {
     .single();
 
   const slug = data[0].slug;
+
+  // Award 15 XP for publishing a tier list (PRD §23)
+  await awardXp(supabase, user.id, 15);
+
   redirect(`/tier-lists/${profile?.username}/${slug}`);
 }
